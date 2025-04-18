@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Detection System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .error-message {
+            color: red;
+            font-size: 0.8em;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fraud Detection System</h1>
+        <form id="fraudForm">
+            <label>Transaction Amount (float):</label>
+            <input type="number" id="transactionAmount" step="0.01" required>
+
+            <label>Transaction Type:</label>
+            <select id="transactionType" required>
+                <option value="0">ATM (0)</option>
+                <option value="1">Bank Transfer (1)</option>
+                <option value="2">Online (2)</option>
+                <option value="3">POS (3)</option>
+            </select>
+
+            <label>Account Balance (float):</label>
+            <input type="number" id="accountBalance" step="0.01" required>
+
+            <label>Device Type:</label>
+            <select id="deviceType" required>
+                <option value="0">Laptop (0)</option>
+                <option value="1">Mobile (1)</option>
+                <option value="2">Tablet (2)</option>
+            </select>
+
+            <label>IP Address Flag:</label>
+            <select id="ipAddressFlag" required>
+                <option value="0">Trusted (0)</option>
+                <option value="1">Untrusted (1)</option>
+            </select>
+
+            <label>Previous Frauds:</label>
+            <select id="previousFraud" required>
+                <option value="0">No (0)</option>
+                <option value="1">Yes (1)</option>
+            </select>
+
+            <label>Daily Transaction Count (Integer):</label>
+            <input type="number" id="dailyCount" min="0" required>
+
+            <label>Avg Transaction Amount (over last 7 days):</label>
+            <input type="number" id="avg7d" step="0.01" required>
+
+            <label>Failed Transactions (over last 7 days):</label>
+            <input type="number" id="failed7d" min="0" required>
+
+            <label>Card Type:</label>
+            <select id="cardType" required>
+                <option value="0">Amex (0)</option>
+                <option value="1">Discover (1)</option>
+                <option value="2">Mastercard (2)</option>
+                <option value="3">Visa (3)</option>
+            </select>
+
+            <label>Authentication Method:</label>
+            <select id="authMethod" required>
+                <option value="0">Biometric (0)</option>
+                <option value="1">OTP (1)</option>
+                <option value="2">PIN (2)</option>
+                <option value="3">Password (3)</option>
+            </select>
+
+            <label>Is Weekend:</label>
+            <select id="isWeekend" required>
+                <option value="0">No (0)</option>
+                <option value="1">Yes (1)</option>
+            </select>
+
+            <label>Date/Time:</label>
+            <input type="datetime-local" id="datetime" required>
+            <div id="dateError" class="error-message">Future dates cannot be accepted. Please enter a valid date.</div>
+
+            <button type="submit">Check Fraud</button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('fraudForm');
+            const datetimeInput = document.getElementById('datetime');
+            const dateError = document.getElementById('dateError');
+
+            // Restrict future dates
+            const now = new Date();
+            const timezoneOffset = now.getTimezoneOffset() * 60000;
+            const localISOTime = (new Date(now - timezoneOffset)).toISOString().slice(0, 16);
+            datetimeInput.max = localISOTime;
+
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+
+                const selectedDate = new Date(datetimeInput.value);
+                const now = new Date();
+
+                if (selectedDate > now) {
+                    dateError.style.display = 'block';
+                    datetimeInput.focus();
+                    return;
+                }
+
+                dateError.style.display = 'none';
+
+                const dt = new Date(datetimeInput.value);
+
+                const data = {
+                    Transaction_Amount: document.getElementById('transactionAmount').value,
+                    Transaction_Type: document.getElementById('transactionType').value,
+                    Account_Balance: document.getElementById('accountBalance').value,
+                    Device_Type: document.getElementById('deviceType').value,
+                    IP_Address_Flag: document.getElementById('ipAddressFlag').value,
+                    Previous_Fraudulent_Activity: document.getElementById('previousFraud').value,
+                    Daily_Transaction_Count: document.getElementById('dailyCount').value,
+                    Avg_Transaction_Amount_7d: document.getElementById('avg7d').value,
+                    Failed_Transaction_Count_7d: document.getElementById('failed7d').value,
+                    Card_Type: document.getElementById('cardType').value,
+                    Authentication_Method: document.getElementById('authMethod').value,
+                    Is_Weekend: document.getElementById('isWeekend').value,
+                    Year: dt.getFullYear(),
+                    Month: dt.getMonth() + 1,
+                    Day: dt.getDate(),
+                    Hour: dt.getHours(),
+                    Minute: dt.getMinutes(),
+                    Second: dt.getSeconds()
+                };
+
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.error) {
+                    document.getElementById('result').innerText = `Error: ${result.error}`;
+                } else {
+                    document.getElementById('result').innerHTML = `
+                        <h3>Prediction: ${result.prediction}</h3>
+                        <p>Confidence: ${result.confidence}%</p>
+                        <p>Fraud Probability: ${result.fraud_probability}%</p>
+                    `;
+                }
+            });
+
+            datetimeInput.addEventListener('input', function () {
+                dateError.style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
