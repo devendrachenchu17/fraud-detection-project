@@ -112,5 +112,5 @@ This project is licensed under the MIT License.
 
 ## Author
 
-Devendra Chenchu– Project Developer
+Rishitha Muthyala,Devendra Chenchu,Akhila Sreeperumbuduru– Project Developer
 "# fraud-detection-project" 
