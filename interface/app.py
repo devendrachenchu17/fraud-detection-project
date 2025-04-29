@@ -47,7 +47,6 @@ def predict():
         return jsonify({
             'prediction': 'Fraudulent' if is_fraud else 'Safe',
             'confidence': round((fraud_prob if is_fraud else 1 - fraud_prob) * 100, 2),
-            'fraud_probability': round(fraud_prob * 100, 2)
         })
 
     except Exception as e:
